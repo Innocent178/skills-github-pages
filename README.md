@@ -1,4 +1,350 @@
-<!--
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Location Tracker</title>
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --accent-color: #4895ef;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --success-color: #4cc9f0;
+            --error-color: #e63946;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark-color);
+            background-color: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: 2rem 1rem;
+            width: 100%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .search-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .input-group {
+            display: flex;
+            margin-bottom: 1rem;
+        }
+
+        input {
+            flex: 1;
+            padding: 0.8rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 5px 0 0 5px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--accent-color);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0 1.5rem;
+            border-radius: 0 5px 5px 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .result-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .result-container.show {
+            display: block;
+        }
+
+        .info-group {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        .info-item {
+            flex-basis: 48%;
+            background-color: var(--light-color);
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .info-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-bottom: 0.3rem;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        #map {
+            width: 100%;
+            height: 300px;
+            border-radius: 10px;
+            margin-top: 1.5rem;
+            border: none;
+        }
+
+        .loader {
+            display: none;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .error-message {
+            color: var(--error-color);
+            text-align: center;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        footer {
+            margin-top: auto;
+            width: 100%;
+            background-color: var(--dark-color);
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .info-item {
+                flex-basis: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>IP Location Tracker</h1>
+        <p>Enter an IP address to find its geographic location</p>
+    </header>
+
+    <div class="container">
+        <div class="search-container">
+            <div class="input-group">
+                <input type="text" id="ip-input" placeholder="Enter IP address (e.g., 8.8.8.8) or leave empty for your IP">
+                <button id="search-btn">Track</button>
+            </div>
+            <div class="loader" id="loader"></div>
+            <p class="error-message" id="error-message"></p>
+        </div>
+
+        <div class="result-container" id="result-container">
+            <h2>Location Information</h2>
+            <div class="info-group">
+                <div class="info-item">
+                    <div class="info-label">IP Address</div>
+                    <div class="info-value" id="ip"></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Location</div>
+                    <div class="info-value" id="location"></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Timezone</div>
+                    <div class="info-value" id="timezone"></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">ISP</div>
+                    <div class="info-value" id="isp"></div>
+                </div>
+            </div>
+            <iframe id="map" frameborder="0" scrolling="no" marginheight="0" marginwidth="0"></iframe>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2023 IP Location Tracker | Created with HTML, CSS & JavaScript</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ipInput = document.getElementById('ip-input');
+            const searchBtn = document.getElementById('search-btn');
+            const resultContainer = document.getElementById('result-container');
+            const loader = document.getElementById('loader');
+            const errorMessage = document.getElementById('error-message');
+            
+            // Elements to display the results
+            const ipElement = document.getElementById('ip');
+            const locationElement = document.getElementById('location');
+            const timezoneElement = document.getElementById('timezone');
+            const ispElement = document.getElementById('isp');
+            const mapElement = document.getElementById('map');
+
+            // Function to validate IP address
+            function isValidIP(ip) {
+                const regex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+                return regex.test(ip);
+            }
+
+            // Function to get IP information
+            async function getIPInfo(ip = '') {
+                try {
+                    // Using ipinfo.io API
+                    const url = ip ? `https://ipinfo.io/${ip}/json` : 'https://ipinfo.io/json';
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch IP information');
+                    }
+                    
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    throw error;
+                }
+            }
+
+            // Function to display the results
+            function displayResults(data) {
+                ipElement.textContent = data.ip;
+                
+                const location = `${data.city || 'N/A'}, ${data.region || 'N/A'}, ${data.country || 'N/A'}`;
+                locationElement.textContent = location;
+                
+                timezoneElement.textContent = data.timezone || 'N/A';
+                ispElement.textContent = data.org || 'N/A';
+                
+                // If we have coordinates, display the map
+                if (data.loc) {
+                    const [lat, lng] = data.loc.split(',');
+                    const mapUrl = `https://maps.google.com/maps?q=${lat},${lng}&z=13&output=embed`;
+                    mapElement.src = mapUrl;
+                } else {
+                    mapElement.src = '';
+                }
+                
+                resultContainer.classList.add('show');
+            }
+
+            // Event listener for the search button
+            searchBtn.addEventListener('click', async function() {
+                const ip = ipInput.value.trim();
+                
+                // If IP is provided, validate it
+                if (ip && !isValidIP(ip)) {
+                    errorMessage.textContent = 'Please enter a valid IP address';
+                    errorMessage.style.display = 'block';
+                    return;
+                }
+                
+                // Reset error message
+                errorMessage.style.display = 'none';
+                
+                // Show loader
+                loader.style.display = 'block';
+                
+                try {
+                    const data = await getIPInfo(ip);
+                    displayResults(data);
+                } catch (error) {
+                    errorMessage.textContent = 'Error fetching IP information. Please try again.';
+                    errorMessage.style.display = 'block';
+                    resultContainer.classList.remove('show');
+                } finally {
+                    loader.style.display = 'none';
+                }
+            });
+
+            // Allow pressing Enter to search
+            ipInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchBtn.click();
+                }
+            });
+
+            // On page load, get the user's IP info
+            window.addEventListener('load', async function() {
+                loader.style.display = 'block';
+                
+                try {
+                    const data = await getIPInfo();
+                    displayResults(data);
+                } catch (error) {
+                    errorMessage.textContent = 'Error fetching your IP information. Please try manually.';
+                    errorMessage.style.display = 'block';
+                } finally {
+                    loader.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
   <<< Author notes: Header of the course >>>
   Include a 1280×640 image, course title in sentence case, and a concise description in emphasis.
   In your repository settings: enable template repository, add your 1280×640 social image, auto delete head branches.
